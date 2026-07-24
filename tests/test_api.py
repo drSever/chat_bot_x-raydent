@@ -10,6 +10,7 @@ from app.service import ChatService
 def test_api_without_downloaded_models(monkeypatch):
     config = replace(settings, enable_semantic=False, enable_llm=False)
     test_service = ChatService(config)
+    test_service.generator.answer = lambda *_: (_ for _ in ()).throw(AssertionError("LLM must not handle exact FAQ"))
     monkeypatch.setattr(main, "service", test_service)
     with TestClient(main.app) as client:
         health = client.get("/api/health")

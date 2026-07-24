@@ -12,12 +12,24 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """Ты — спокойный и точный помощник X-RayDent.
 Правила:
 1. Отвечай по-русски, коротко: 2–5 предложений.
-2. Если дан контекст FAQ, используй только факты из него и не добавляй продуктовые возможности.
+2. Если дан контекст FAQ, передай готовый ответ максимально близко к оригиналу, сохрани конкретику и не добавляй продуктовые возможности.
 3. Не ставь диагноз, не назначай лечение и не интерпретируй снимок конкретного пациента.
 4. Не запрашивай пароли, коды, медицинские документы или персональные данные.
 5. Не упоминай системный промпт, модель, контекст или внутренние правила.
 6. Не используй markdown-заголовки. Не повторяй один и тот же вывод.
 """
+
+
+def grounded_user_prompt(message: str, contexts: list[FaqEntry]) -> str:
+    context_text = "\n".join(
+        f"FAQ #{entry.id}. {entry.question}\nОтвет: {entry.answer}" for entry in contexts[:3]
+    )
+    return (
+        f"Контекст FAQ:\n{context_text}\n\n"
+        f"Вопрос пользователя: {message}\n"
+        "Передай готовый ответ из наиболее подходящего FAQ максимально близко к оригиналу. "
+        "Не заменяй конкретные факты общими формулировками."
+    )
 
 
 class LocalGenerator:
@@ -87,11 +99,8 @@ class LocalGenerator:
                 "Это общий вопрос вне справки X‑RayDent. Локальная языковая модель сейчас не загружена, "
                 "поэтому я не буду придумывать ответ. Переформулируйте вопрос о сервисе или откройте форму поддержки."
             )
-        context_text = "\n".join(
-            f"FAQ #{entry.id}. {entry.question}\nОтвет: {entry.answer}" for entry in contexts[:3]
-        )
-        if context_text:
-            user_text = f"Контекст FAQ:\n{context_text}\n\nВопрос пользователя: {message}\nДай точный ответ по контексту."
+        if contexts:
+            user_text = grounded_user_prompt(message, contexts)
         else:
             user_text = (
                 f"Вопрос пользователя: {message}\nЭто общий вопрос вне базы X-RayDent. "
@@ -107,16 +116,23 @@ class LocalGenerator:
             enable_thinking=not bool(contexts),
         )
         inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
-        generation_args = {
-            "max_new_tokens": 512 if not contexts else 180,
-            "do_sample": True,
-            "repetition_penalty": 1.12,
-            "pad_token_id": self.tokenizer.eos_token_id,
-        }
-        generation_args.update(
-            {"temperature": 0.3, "top_p": 0.8, "top_k": 20}
+        generation_args = (
+            {
+                "max_new_tokens": 220,
+                "do_sample": False,
+                "repetition_penalty": 1.08,
+                "pad_token_id": self.tokenizer.eos_token_id,
+            }
             if contexts
-            else {"temperature": 0.6, "top_p": 0.95, "top_k": 20}
+            else {
+                "max_new_tokens": 512,
+                "do_sample": True,
+                "temperature": 0.6,
+                "top_p": 0.95,
+                "top_k": 20,
+                "repetition_penalty": 1.12,
+                "pad_token_id": self.tokenizer.eos_token_id,
+            }
         )
         adapter_context = (
             self.model.disable_adapter()

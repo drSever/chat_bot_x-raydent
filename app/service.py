@@ -7,7 +7,7 @@ from collections import Counter
 from .config import Settings
 from .faq import parse_faq
 from .generator import LocalGenerator
-from .retrieval import FaqRetriever
+from .retrieval import FaqRetriever, normalize
 from .safety import route_safety
 from .schemas import ChatRequest, ChatResponse, FaqSource
 
@@ -50,6 +50,11 @@ class ChatService:
                 "либо откройте демо-форму поддержки."
             )
             source_type = "fallback"
+        elif normalize(request.message) == normalize(hits[0].entry.question):
+            # Exact FAQ questions should remain stable and verbatim. The LLM
+            # is reserved for paraphrases that benefit from natural phrasing.
+            answer = hits[0].entry.answer
+            source_type = "faq"
         else:
             with self._model_lock:
                 answer = self.generator.answer(request.message, contexts, history)

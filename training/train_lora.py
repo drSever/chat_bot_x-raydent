@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("artifacts/adapter"))
     parser.add_argument("--profile", choices=("cpu-mvp", "gpu"), default="cpu-mvp")
     parser.add_argument("--max-samples", type=int, default=None)
-    parser.add_argument("--max-length", type=int, default=384)
+    parser.add_argument("--max-length", type=int, default=640)
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--offline", action="store_true", help="Использовать только локальный кеш Hugging Face")

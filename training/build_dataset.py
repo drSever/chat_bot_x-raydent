@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import ROOT
 from app.faq import parse_faq
-from app.generator import SYSTEM_PROMPT
+from app.generator import SYSTEM_PROMPT, grounded_user_prompt
 
 
 SAFETY_EXAMPLES = [
@@ -23,18 +23,42 @@ SAFETY_EXAMPLES = [
 ]
 
 
+def question_variants(question: str) -> list[str]:
+    clean = question.strip()
+    lowered = clean[0].lower() + clean[1:]
+    polite = f"Подскажите, пожалуйста, {lowered}"
+    replacements = (
+        ("Можно ли ", "Разрешено ли "),
+        ("Как ", "Каким образом "),
+        ("Почему ", "По какой причине "),
+        ("Где ", "Где именно "),
+        ("Что ", "Подскажите, что "),
+        ("Нужно ли ", "Обязательно ли "),
+        ("Есть ли ", "Предусмотрена ли возможность: "),
+    )
+    changed = next(
+        (replacement + clean[len(prefix):] for prefix, replacement in replacements if clean.startswith(prefix)),
+        f"Мне нужно уточнить: {lowered}",
+    )
+    return [clean, polite, changed]
+
+
 def build(output: Path) -> tuple[int, int]:
     entries = parse_faq(ROOT / "data" / "chatbot-faq-119.md")
     rows = []
-    for entry in entries:
-        rows.append({
-            "id": f"faq-{entry.id}",
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": entry.question},
-                {"role": "assistant", "content": entry.answer},
-            ],
-        })
+    for index, entry in enumerate(entries):
+        neighbors = [entries[(index - 1) % len(entries)], entries[(index + 1) % len(entries)]]
+        for variant, question in enumerate(question_variants(entry.question)):
+            contexts = [entry] if variant == 0 else [entry, *neighbors[:variant]]
+            random.Random(entry.id * 10 + variant).shuffle(contexts)
+            rows.append({
+                "id": f"faq-{entry.id}-{variant}",
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": grounded_user_prompt(question, contexts)},
+                    {"role": "assistant", "content": entry.answer},
+                ],
+            })
     for idx, (question, answer) in enumerate(SAFETY_EXAMPLES, 1):
         for variant in range(3):
             prefix = ("Подскажите, " if variant == 1 else "Мне нужно узнать: " if variant == 2 else "")
