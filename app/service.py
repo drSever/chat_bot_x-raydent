@@ -46,11 +46,10 @@ class ChatService:
         if not grounded and not self.config.allow_general_knowledge:
             answer = (
                 "Я не нашёл подтверждённого ответа в справке X‑RayDent и не буду придумывать. "
-                "Уточните, вопрос относится к сервису, отчёту, доступу, оплате или клинической ситуации, "
-                "либо откройте демо-форму поддержки."
+                f"Для точного ответа напишите на {self.config.support_email}."
             )
             source_type = "fallback"
-        elif normalize(request.message) == normalize(hits[0].entry.question):
+        elif grounded and normalize(request.message) == normalize(hits[0].entry.question):
             # Exact FAQ questions should remain stable and verbatim. The LLM
             # is reserved for paraphrases that benefit from natural phrasing.
             answer = hits[0].entry.answer
@@ -59,6 +58,16 @@ class ChatService:
             with self._model_lock:
                 answer = self.generator.answer(request.message, contexts, history)
             source_type = "faq" if grounded else ("general" if self.generator.ready else "fallback")
+            if not grounded:
+                if self.generator.ready:
+                    answer = (
+                        "В справке X‑RayDent нет точного ответа, поэтому следующий ответ может быть приблизительным. "
+                        f"{answer.strip()}"
+                    )
+                answer = (
+                    f"{answer.rstrip()} Для подтверждения информации напишите на "
+                    f"{self.config.support_email}."
+                )
         sources = [
             FaqSource(id=hit.entry.id, section=hit.entry.section, question=hit.entry.question, score=hit.score)
             for hit in hits

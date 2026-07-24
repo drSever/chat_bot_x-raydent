@@ -24,10 +24,11 @@ class Settings:
     adapter_path: Path = Path(os.getenv("XRAYDENT_ADAPTER_PATH", ROOT / "artifacts" / "adapter"))
     enable_semantic: bool = _flag("XRAYDENT_ENABLE_SEMANTIC", True)
     enable_llm: bool = _flag("XRAYDENT_ENABLE_LLM", True)
-    allow_general_knowledge: bool = _flag("XRAYDENT_ALLOW_GENERAL_KNOWLEDGE", False)
+    allow_general_knowledge: bool = _flag("XRAYDENT_ALLOW_GENERAL_KNOWLEDGE", True)
     offline: bool = _flag("XRAYDENT_OFFLINE", True)
     retrieval_threshold: float = float(os.getenv("XRAYDENT_RETRIEVAL_THRESHOLD", "0.55"))
     max_history: int = int(os.getenv("XRAYDENT_MAX_HISTORY", "6"))
+    support_email: str = os.getenv("XRAYDENT_SUPPORT_EMAIL", "info@x-raydent.ru").strip() or "info@x-raydent.ru"
 
 
 settings = Settings()
