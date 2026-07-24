@@ -46,7 +46,11 @@ $env:XRAYDENT_ENABLE_LLM='false'
 .\.venv\Scripts\python.exe training\train_lora.py --profile cpu-mvp
 ```
 
-CPU-профиль намеренно использует 32 примера, один epoch и LoRA rank 8: это проверяемый тренировочный MVP, а не финальная продуктовая модель. Для полноценного прогона откройте `training/colab_qwen3_lora.ipynb`, выберите GPU и выполните все ячейки. Полученный архив распакуйте в `artifacts/adapter`.
+CPU-профиль намеренно использует 32 примера, один epoch и LoRA rank 8: это проверяемый тренировочный MVP, а не финальная продуктовая модель.
+
+[Открыть обучение в Google Colab](https://colab.research.google.com/github/drSever/chat_bot_x-raydent/blob/main/training/colab_qwen3_lora.ipynb)
+
+В Colab выберите T4 GPU и выполните все ячейки сверху вниз. Ноутбук проверит GPU, соберёт полный датасет, обучит адаптер, проверит веса и скачает `xraydent-qwen3-lora.zip`. Полученный архив распакуйте в `artifacts/adapter`.
 
 В поставку включён фактически обученный быстрый адаптер: 8 примеров, 1 epoch, 2 optimizer steps, 1 146 880 обучаемых параметров. Он предназначен для end-to-end проверки; перед production используйте полный датасет и GPU-профиль.
 
