@@ -1,0 +1,6 @@
+{
+  "base_model": "Qwen/Qwen3-0.6B",
+  "profile": "cpu-mvp",
+  "samples": 8,
+  "epochs": 1
+}
