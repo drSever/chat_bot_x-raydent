@@ -69,7 +69,10 @@ def main() -> None:
     )
     model.config.use_cache = False
     if use_cuda:
-        model.gradient_checkpointing_enable()
+        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        # The base model is frozen by LoRA. Gradient checkpointing still
+        # needs an input with requires_grad=True to build the backward graph.
+        model.enable_input_require_grads()
     config = LoraConfig(
         r=8,
         lora_alpha=16,
