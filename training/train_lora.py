@@ -5,6 +5,7 @@ import json
 import os
 import random
 import statistics
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 
@@ -28,6 +29,18 @@ def main() -> None:
     args = parser.parse_args()
 
     import torch
+    from packaging.version import Version
+
+    try:
+        torchao_version = Version(version("torchao"))
+        if torchao_version <= Version("0.16.0"):
+            raise SystemExit(
+                f"Установлен несовместимый torchao {torchao_version}. "
+                "Для обычного LoRA удалите его командой: pip uninstall -y torchao"
+            )
+    except PackageNotFoundError:
+        pass
+
     from peft import LoraConfig, get_peft_model
     from torch.utils.data import DataLoader, Dataset
     from transformers import AutoModelForCausalLM, AutoTokenizer
