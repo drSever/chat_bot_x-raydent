@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-if (-not (Test-Path '.venv\Scripts\python.exe')) { throw 'Сначала запустите scripts\setup.ps1' }
+if (-not (Test-Path '.venv\Scripts\python.exe')) { throw 'Run scripts\setup.ps1 first.' }
 $env:XRAYDENT_OFFLINE = 'true'
 $env:HF_HUB_OFFLINE = '1'
 $env:TRANSFORMERS_OFFLINE = '1'
